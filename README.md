@@ -3,7 +3,7 @@
 **Author:** Daniel Longo  
 **License:** MIT License
 
-A lightweight, background utility built in Python for **100% Orange Juice** players. It logs your dice rolls instantly via hotkeys, tracks live session luck statistics, and automatically copies raw roll data to your clipboard for seamless import into Google Sheets or Excel.
+A lightweight, background utility built in Python for **100% Orange Juice** players. It logs your dice rolls instantly via hotkeys, tracks live session luck statistics, manages old log files, and automatically copies raw roll data to your clipboard for seamless import into Google Sheets or Excel.
 
 ---
 
@@ -11,6 +11,7 @@ A lightweight, background utility built in Python for **100% Orange Juice** play
 
 * **Instant Hotkey Logging:** Tap `1`–`6` on your top row or Numpad (`Numpad 1`–`Numpad 6`) to log rolls without leaving full-screen mode.
 * **New Game / Instant Restart (`R`):** Start a new match instantly! Automatically copies the current game's rolls to your clipboard, clears live stats, and creates a fresh CSV file without restarting the program.
+* **CSV Cleanup Utility (`C`):** Keep your folder clutter-free! Scans for previous match `.csv` files, lists them, and prompts for explicit confirmation (`y/N`) before deleting them. *(Your current match CSV is automatically protected).*
 * **Live Luck Stats:** Calculates your session average, natural 6s %, natural 1s %, and assigns a dynamic luck badge (*Blessed*, *Balanced*, or *Cursed*).
 * **Audio Feedback:** Distinct sound cues via `winsound`—high chimes for natural 6s, low buzzes for natural 1s, rising tones on game restart, and standard clicks for other rolls.
 * **Undo Support (`Backspace` / `U`):** Fat-fingered a number? Instantly remove the last roll from both memory and the active CSV log.
@@ -28,5 +29,6 @@ A lightweight, background utility built in Python for **100% Orange Juice** play
 | **`1` – `6`** (or **`Numpad 1` – `6`**) | Log die roll value |
 | **`Backspace`** or **`U`** | Undo / remove last recorded roll |
 | **`R`** | **New Game** (Copies current match to Clipboard & initializes fresh session) |
+| **`C`** | **Clean Old CSVs** (Scans for past `.csv` logs & prompts before deleting) |
 | **`F9`** | Toggle Pause / Resume logging |
 | **`Esc`** | Exit program & copy session rolls to Clipboard (3s delay to read confirmation) |

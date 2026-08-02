@@ -2,10 +2,11 @@
 🍊 100% Orange Juice Roll Logger
 Author: Daniel Longo
 Description: Automated roll logging tool with live stats, audio feedback, 
-             undo functionality, restart support, and automatic spreadsheet copy.
+             undo functionality, restart support, CSV cleanup, and spreadsheet copy.
 """
 
 import csv
+import glob
 import os
 import time
 import winsound
@@ -20,6 +21,7 @@ AUTHOR = "Daniel Longo"
 rolls = []
 logging_active = True
 CSV_FILE_PATH = ""
+listener = None
 
 def start_new_session():
     """Generates a new timestamped CSV file and resets in-memory rolls."""
@@ -71,13 +73,13 @@ def rewrite_csv():
 def display_stats():
     """Print current live session metrics to the console."""
     os.system('cls' if os.name == 'nt' else 'clear')
-    print("=" * 70)
+    print("=" * 75)
     status_str = "🟢 ACTIVE" if logging_active else "🔴 PAUSED (Press F9 to Resume)"
     print(f" 🍊 100% Orange Juice Roll Logger | Author: {AUTHOR}")
     print(f" Status: {status_str}")
     print(f" 📁 CSV Path: {CSV_FILE_PATH}")
-    print(" [1-6] Roll | [Backspace/U] Undo | [R] New Game | [F9] Pause | [Esc] Exit")
-    print("=" * 70)
+    print(" [1-6] Roll | [Backspace/U] Undo | [R] New Game | [C] Clean CSVs | [F9] Pause | [Esc] Exit")
+    print("=" * 75)
 
     if not rolls:
         print("\n No rolls recorded for this match. Waiting for input...")
@@ -101,7 +103,7 @@ def display_stats():
     print(f" Session Average  : {avg:.2f} ({luck})")
     print(f" Natural 6s       : {sixes} ({sixes/total*100:.1f}%)")
     print(f" Natural 1s       : {ones} ({ones/total*100:.1f}%)")
-    print("-" * 70)
+    print("-" * 75)
 
 def log_roll(roll_val):
     rolls.append(roll_val)
@@ -137,6 +139,53 @@ def restart_session():
     display_stats()
     print("\n 🔄 NEW GAME STARTED! Previous game rolls copied to clipboard.")
 
+def cleanup_old_csvs():
+    """Finds and offers to delete old oj_rolls_*.csv files excluding the active session."""
+    global logging_active
+    logging_active = False  # Pause background logging during prompt
+
+    # Find all CSV files in the current folder matching the pattern
+    folder = os.path.dirname(CSV_FILE_PATH)
+    all_csvs = glob.glob(os.path.join(folder, "oj_rolls_*.csv"))
+    
+    # Filter out the currently active file
+    old_csvs = [f for f in all_csvs if os.path.abspath(f) != os.path.abspath(CSV_FILE_PATH)]
+
+    print("\n" + "=" * 75)
+    print(" 🧹 CSV CLEANUP UTILITY")
+    print("=" * 75)
+
+    if not old_csvs:
+        print(" ℹ️ No old CSV files found to delete.")
+        print(" Active session file is protected.")
+        time.sleep(2)
+    else:
+        print(f" Found {len(old_csvs)} old CSV file(s) from previous sessions:")
+        for file in old_csvs:
+            print(f"   • {os.path.basename(file)}")
+        
+        print("\n ⚠️ WARNING: This action cannot be undone.")
+        confirm = input(" Are you sure you want to delete these files? (y/N): ").strip().lower()
+
+        if confirm == 'y':
+            deleted_count = 0
+            for file in old_csvs:
+                try:
+                    os.remove(file)
+                    deleted_count += 1
+                except Exception as e:
+                    print(f"   ❌ Failed to delete {os.path.basename(file)}: {e}")
+            
+            winsound.Beep(800, 150)
+            print(f"\n ✅ Successfully deleted {deleted_count} old CSV file(s).")
+            time.sleep(2)
+        else:
+            print("\n ❌ Cleanup cancelled. No files were deleted.")
+            time.sleep(1.5)
+
+    logging_active = True
+    display_stats()
+
 def on_press(key):
     global logging_active
 
@@ -157,7 +206,7 @@ def on_press(key):
             undo_last_roll()
             return
 
-        # Handle keyboard characters ('1'-'6', 'u' for undo, 'r' for new game)
+        # Handle keyboard characters
         if hasattr(key, 'char') and key.char:
             char = key.char.lower()
             if char in ['1', '2', '3', '4', '5', '6']:
@@ -166,6 +215,8 @@ def on_press(key):
                 undo_last_roll()
             elif char == 'r':
                 restart_session()
+            elif char == 'c':
+                cleanup_old_csvs()
 
         # Handle Numpad Virtual Keys (VK 97 = Numpad 1, VK 102 = Numpad 6)
         elif hasattr(key, 'vk') and 97 <= key.vk <= 102:
