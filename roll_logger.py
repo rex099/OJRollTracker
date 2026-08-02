@@ -2,7 +2,7 @@
 🍊 100% Orange Juice Roll Logger
 Author: Daniel Longo
 Description: Automated roll logging tool with live stats, audio feedback, 
-             undo functionality, and automatic spreadsheet copy.
+             undo functionality, restart support, and automatic spreadsheet copy.
 """
 
 import csv
@@ -16,18 +16,22 @@ import pyperclip
 # Program Metadata
 AUTHOR = "Daniel Longo"
 
-# Generate unique CSV file for this session and resolve its absolute path
-session_time = datetime.now().strftime("%Y%m%d_%H%M%S")
-CSV_FILENAME = f"oj_rolls_{session_time}.csv"
-CSV_FILE_PATH = os.path.abspath(CSV_FILENAME)
-
-# Global state
+# Global State
 rolls = []
 logging_active = True
+CSV_FILE_PATH = ""
 
-# Create empty session CSV
-with open(CSV_FILE_PATH, mode="w", newline="", encoding="utf-8") as f:
-    pass
+def start_new_session():
+    """Generates a new timestamped CSV file and resets in-memory rolls."""
+    global rolls, CSV_FILE_PATH
+    rolls = []
+    session_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+    csv_filename = f"oj_rolls_{session_time}.csv"
+    CSV_FILE_PATH = os.path.abspath(csv_filename)
+
+    # Create empty session CSV
+    with open(CSV_FILE_PATH, mode="w", newline="", encoding="utf-8") as f:
+        pass
 
 def play_sound(roll_val):
     """Play audio feedback depending on roll value."""
@@ -49,6 +53,14 @@ def play_undo_sound():
     except Exception:
         pass
 
+def play_reset_sound():
+    """Play a double rising chime on game reset."""
+    try:
+        winsound.Beep(600, 100)
+        winsound.Beep(900, 150)
+    except Exception:
+        pass
+
 def rewrite_csv():
     """Sync CSV file with the current in-memory rolls list."""
     with open(CSV_FILE_PATH, mode="w", newline="", encoding="utf-8") as f:
@@ -64,11 +76,11 @@ def display_stats():
     print(f" 🍊 100% Orange Juice Roll Logger | Author: {AUTHOR}")
     print(f" Status: {status_str}")
     print(f" 📁 CSV Path: {CSV_FILE_PATH}")
-    print(" [1-6] Log Roll | [Backspace/U] Undo Last | [F9] Pause/Resume | [Esc] Finish & Copy")
+    print(" [1-6] Roll | [Backspace/U] Undo | [R] New Game | [F9] Pause | [Esc] Exit")
     print("=" * 70)
 
     if not rolls:
-        print("\n No rolls recorded yet. Waiting for input...")
+        print("\n No rolls recorded for this match. Waiting for input...")
         return
 
     total = len(rolls)
@@ -105,15 +117,25 @@ def undo_last_roll():
         display_stats()
         print(f"\n ⚠️ UNDO: Removed roll ({removed})")
 
-def copy_to_clipboard():
-    """Copy raw rolls (one per line) to Windows clipboard on exit."""
+def copy_to_clipboard(silent=False):
+    """Copy raw rolls (one per line) to Windows clipboard."""
     if rolls:
         clipboard_text = "\n".join(str(r) for r in rolls)
         pyperclip.copy(clipboard_text)
-        print("\n 📋 SUCCESS: All session rolls copied to clipboard!")
-        print("    You can now paste (Ctrl + V) directly into your Google Sheet.")
+        if not silent:
+            print("\n 📋 SUCCESS: All session rolls copied to clipboard!")
+            print("    You can now paste (Ctrl + V) directly into your Google Sheet.")
     else:
-        print("\n ℹ️ No rolls logged this session.")
+        if not silent:
+            print("\n ℹ️ No rolls logged this session.")
+
+def restart_session():
+    """Copies current match data and initializes a fresh game session."""
+    copy_to_clipboard(silent=True)
+    start_new_session()
+    play_reset_sound()
+    display_stats()
+    print("\n 🔄 NEW GAME STARTED! Previous game rolls copied to clipboard.")
 
 def on_press(key):
     global logging_active
@@ -135,13 +157,15 @@ def on_press(key):
             undo_last_roll()
             return
 
-        # Handle keyboard characters ('1'-'6' or 'u' for undo)
+        # Handle keyboard characters ('1'-'6', 'u' for undo, 'r' for new game)
         if hasattr(key, 'char') and key.char:
             char = key.char.lower()
             if char in ['1', '2', '3', '4', '5', '6']:
                 log_roll(int(char))
             elif char == 'u':
                 undo_last_roll()
+            elif char == 'r':
+                restart_session()
 
         # Handle Numpad Virtual Keys (VK 97 = Numpad 1, VK 102 = Numpad 6)
         elif hasattr(key, 'vk') and 97 <= key.vk <= 102:
@@ -157,7 +181,8 @@ def on_release(key):
         time.sleep(3)
         return False
 
-# Initial display setup
+# Initial session setup
+start_new_session()
 display_stats()
 
 # Start listening for key events
