@@ -16,16 +16,17 @@ import pyperclip
 # Program Metadata
 AUTHOR = "Daniel Longo"
 
-# Generate unique CSV file for this session
+# Generate unique CSV file for this session and resolve its absolute path
 session_time = datetime.now().strftime("%Y%m%d_%H%M%S")
-CSV_FILE = f"oj_rolls_{session_time}.csv"
+CSV_FILENAME = f"oj_rolls_{session_time}.csv"
+CSV_FILE_PATH = os.path.abspath(CSV_FILENAME)
 
 # Global state
 rolls = []
 logging_active = True
 
 # Create empty session CSV
-with open(CSV_FILE, mode="w", newline="", encoding="utf-8") as f:
+with open(CSV_FILE_PATH, mode="w", newline="", encoding="utf-8") as f:
     pass
 
 def play_sound(roll_val):
@@ -50,7 +51,7 @@ def play_undo_sound():
 
 def rewrite_csv():
     """Sync CSV file with the current in-memory rolls list."""
-    with open(CSV_FILE, mode="w", newline="", encoding="utf-8") as f:
+    with open(CSV_FILE_PATH, mode="w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         for r in rolls:
             writer.writerow([r])
@@ -58,13 +59,13 @@ def rewrite_csv():
 def display_stats():
     """Print current live session metrics to the console."""
     os.system('cls' if os.name == 'nt' else 'clear')
-    print("=" * 60)
+    print("=" * 70)
     status_str = "🟢 ACTIVE" if logging_active else "🔴 PAUSED (Press F9 to Resume)"
     print(f" 🍊 100% Orange Juice Roll Logger | Author: {AUTHOR}")
     print(f" Status: {status_str}")
-    print(f" 📁 Session File: {CSV_FILE}")
+    print(f" 📁 CSV Path: {CSV_FILE_PATH}")
     print(" [1-6] Log Roll | [Backspace/U] Undo Last | [F9] Pause/Resume | [Esc] Finish & Copy")
-    print("=" * 60)
+    print("=" * 70)
 
     if not rolls:
         print("\n No rolls recorded yet. Waiting for input...")
@@ -88,7 +89,7 @@ def display_stats():
     print(f" Session Average  : {avg:.2f} ({luck})")
     print(f" Natural 6s       : {sixes} ({sixes/total*100:.1f}%)")
     print(f" Natural 1s       : {ones} ({ones/total*100:.1f}%)")
-    print("-" * 60)
+    print("-" * 70)
 
 def log_roll(roll_val):
     rolls.append(roll_val)
@@ -153,7 +154,7 @@ def on_release(key):
     if key == keyboard.Key.esc:
         copy_to_clipboard()
         print("\n Closing logger in 3 seconds...")
-        time.sleep(3)  # Delay so you can read the confirmation message
+        time.sleep(3)
         return False
 
 # Initial display setup
